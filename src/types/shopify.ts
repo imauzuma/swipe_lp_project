@@ -20,12 +20,13 @@ export interface ShopifyProduct {
 }
 
 export interface ShopifyMetaobject {
+  id: string;
   handle: string;
   slides: {
-    references: {
-      edges: Array<{
-        node: ShopifyProduct;
-      }>;
+    type: string;
+    value: string;
+    references?: {
+      nodes: Array<ShopifyProduct>;
     };
   };
 }
