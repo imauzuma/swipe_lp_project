@@ -107,7 +107,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string) => {
   }
   
   const productsQuery = `
-    query GetProducts($handles: [String!]!) {
+    query GetProducts($handles: String!) {
       products(first: 20, query: $handles) {
         edges {
           node {
@@ -134,6 +134,11 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string) => {
       }
     }
   `;
+  
+  console.log('Product handles to query:', productHandles);
+  
+  const queryString = productHandles.map(handle => `handle:${handle}`).join(" OR ");
+  console.log('Query string for products:', queryString);
   
   const productsResponse = await shopifyFetch<{
     products: {
@@ -162,7 +167,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string) => {
     };
   }>({
     query: productsQuery,
-    variables: { handles: productHandles.map(handle => `handle:${handle}`).join(" OR ") }
+    variables: { handles: queryString }
   });
   
   return productsResponse.data.products.edges.map((edge) => {
