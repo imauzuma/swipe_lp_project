@@ -80,8 +80,9 @@ const shopifyFetch = async <T>({
 
 /**
  * Fetches product data for the LP from Shopify metaobject and products
+ * @param metaobjectHandle - Handle of the metaobject to fetch. Defaults to LP_METAOBJECT_HANDLE from env.
  */
-export const getWorkspaceLPSlidesData = async (metaobjectHandle: string) => {
+export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_METAOBJECT_HANDLE) => {
   try {
     console.log('Fetching metaobject data for handle:', metaobjectHandle);
     
