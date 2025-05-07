@@ -91,19 +91,19 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       return [];
     }
     
+    const METAOBJECT_TYPE_NAME = "lp_swipe_content";
+    
     const metaobjectQuery = `
-      query GetMetaobject($handle: String!) {
+      query GetMetaobject($handle: MetaobjectHandleInput!) {
         metaobject(handle: $handle) {
+          id
           handle
-          fields {
-            key
-            value
+          products_list: field(key: "products_list") {
             references(first: 20) {
-              edges {
-                node {
-                  ... on Product {
-                    handle
-                  }
+              nodes {
+                ... on Product {
+                  id
+                  handle
                 }
               }
             }
@@ -112,40 +112,54 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }
     `;
     
+    console.log('Using metaobject type:', METAOBJECT_TYPE_NAME);
+    
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
+        id: string;
         handle: string;
-        fields: Array<{
-          key: string;
-          value: string;
+        products_list?: {
           references?: {
-            edges: Array<{
-              node: {
-                handle: string;
-              };
+            nodes: Array<{
+              id: string;
+              handle: string;
             }>;
           };
-        }>;
+        };
       };
     }>({
       query: metaobjectQuery,
-      variables: { handle: metaobjectHandle }
+      variables: { 
+        handle: { 
+          handle: metaobjectHandle, 
+          type: METAOBJECT_TYPE_NAME 
+        } 
+      }
     });
     
-    const slidesField = metaobjectResponse.data.metaobject.fields.find(field => field.key === 'slides');
-    if (!slidesField || !slidesField.references) {
-      console.warn('No slides field or references found in metaobject');
+    console.log('Metaobject response:', {
+      id: metaobjectResponse.data.metaobject.id,
+      handle: metaobjectResponse.data.metaobject.handle,
+      hasProductsList: !!metaobjectResponse.data.metaobject.products_list,
+      hasReferences: !!metaobjectResponse.data.metaobject.products_list?.references,
+      hasNodes: !!metaobjectResponse.data.metaobject.products_list?.references?.nodes,
+      nodeCount: metaobjectResponse.data.metaobject.products_list?.references?.nodes?.length || 0
+    });
+    
+    const productReferences = metaobjectResponse.data.metaobject.products_list?.references?.nodes;
+    if (!productReferences || productReferences.length === 0) {
+      console.warn('No product references found in metaobject');
       return [];
     }
     
-    const productHandles = slidesField.references.edges.map(edge => edge.node.handle);
+    const productHandles = productReferences.map((product) => product.handle);
     
     if (productHandles.length === 0) {
       console.warn('No product handles found in metaobject');
       return [];
     }
     
-    console.log(`Found ${productHandles.length} product handles in metaobject`);
+    console.log(`Found ${productHandles.length} product handles in metaobject:`, productHandles);
     
     const productsQuery = `
       query GetProducts($handles: String!) {
@@ -176,7 +190,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }
     `;
     
-    const queryString = productHandles.map(handle => `handle:${handle}`).join(" OR ");
+    const queryString = productHandles.map((handle: string) => `handle:${handle}`).join(" OR ");
     console.log('Query string for products:', queryString);
     
     const productsResponse = await shopifyFetch<{
@@ -217,7 +231,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
         title: product.title,
         images: product.images.edges.map((imgEdge: { node: { url: string; altText: string | null } }) => ({
           url: imgEdge.node.url,
-          altText: imgEdge.node.altText || undefined
+          altText: imgEdge.node.altText || null
         })),
         priceRange: {
           minVariantPrice: {
