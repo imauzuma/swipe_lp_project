@@ -12,6 +12,13 @@ const shopifyFetch = async <T>({
   try {
     const endpoint = `https://${SHOPIFY_STORE_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
     
+    console.log('Shopify API Request:', {
+      endpoint,
+      variables,
+      hasToken: !!SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+      hasDomain: !!SHOPIFY_STORE_DOMAIN
+    });
+    
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -22,10 +29,23 @@ const shopifyFetch = async <T>({
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Shopify API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText.substring(0, 500) // Truncate long responses
+      });
       throw new Error(`Shopify API error: ${response.statusText}`);
     }
     
     const result = await response.json();
+    
+    console.log('Shopify API Response Structure:', {
+      hasData: !!result.data,
+      hasErrors: !!result.errors,
+      dataKeys: result.data ? Object.keys(result.data) : []
+    });
+    
     return result;
   } catch (error) {
     console.error('Error fetching from Shopify:', error);
