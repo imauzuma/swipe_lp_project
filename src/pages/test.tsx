@@ -1,6 +1,7 @@
 import React from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 
 const TestPage: NextPage = () => {
   return (
@@ -28,12 +29,11 @@ const TestPage: NextPage = () => {
           </pre>
         </div>
         
-        <a 
-          href="/"
-          className="bg-black text-white px-6 py-3 rounded-full"
-        >
-          メインページへ
-        </a>
+        <Link href="/">
+          <span className="bg-black text-white px-6 py-3 rounded-full inline-block cursor-pointer">
+            メインページへ
+          </span>
+        </Link>
       </main>
     </>
   );
