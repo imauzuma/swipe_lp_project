@@ -92,7 +92,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     }
     
     const metaobjectQuery = `
-      query GetMetaobject($handle: String!) {
+      query GetMetaobject($handle: MetaobjectHandleInput!) {
         metaobject(handle: $handle) {
           handle
           fields {
@@ -129,7 +129,12 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       };
     }>({
       query: metaobjectQuery,
-      variables: { handle: metaobjectHandle }
+      variables: { 
+        handle: { 
+          handle: metaobjectHandle,
+          type: "LpSwipeContent" // Assuming the type is a camel-cased version of the metaobject definition
+        } 
+      }
     });
     
     const slidesField = metaobjectResponse.data.metaobject.fields.find(field => field.key === 'slides');
@@ -148,69 +153,62 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     console.log(`Found ${productHandles.length} product handles in metaobject`);
     
     const productsQuery = `
-      query GetProducts($handles: String!) {
-        products(first: 20, query: $handles) {
-          edges {
-            node {
-              id
-              handle
-              title
-              images(first: 10) {
-                edges {
-                  node {
-                    url
-                    altText
-                  }
+      query GetProducts($handles: [String!]!) {
+        nodes(ids: $handles) {
+          ... on Product {
+            id
+            handle
+            title
+            images(first: 10) {
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              onlineStoreUrl
             }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            onlineStoreUrl
           }
         }
       }
     `;
     
-    const queryString = productHandles.map(handle => `handle:${handle}`).join(" OR ");
-    console.log('Query string for products:', queryString);
+    const productGlobalIds = productHandles.map(handle => `gid://shopify/Product/${handle}`);
+    console.log('Product Global IDs:', productGlobalIds);
     
     const productsResponse = await shopifyFetch<{
-      products: {
-        edges: Array<{
-          node: {
-            id: string;
-            handle: string;
-            title: string;
-            images: {
-              edges: Array<{
-                node: {
-                  url: string;
-                  altText: string | null;
-                };
-              }>;
+      nodes: Array<{
+        id: string;
+        handle: string;
+        title: string;
+        images: {
+          edges: Array<{
+            node: {
+              url: string;
+              altText: string | null;
             };
-            priceRange: {
-              minVariantPrice: {
-                amount: string;
-                currencyCode: string;
-              };
-            };
-            onlineStoreUrl: string;
+          }>;
+        };
+        priceRange: {
+          minVariantPrice: {
+            amount: string;
+            currencyCode: string;
           };
-        }>;
-      };
+        };
+        onlineStoreUrl: string;
+      }>;
     }>({
       query: productsQuery,
-      variables: { handles: queryString }
+      variables: { handles: productGlobalIds }
     });
     
-    const products = productsResponse.data.products.edges.map((edge) => {
-      const product = edge.node;
+    const products = productsResponse.data.nodes.map((product) => {
       return {
         id: product.id,
         handle: product.handle,
