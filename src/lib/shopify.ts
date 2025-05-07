@@ -88,71 +88,80 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string) => {
   
   const productsQuery = `
     query GetProducts($handles: [String!]!) {
-      nodes(ids: $handles) {
-        ... on Product {
-          id
-          handle
-          title
-          images(first: 10) {
-            edges {
-              node {
-                url
-                altText
+      products(first: 20, query: $handles) {
+        edges {
+          node {
+            id
+            handle
+            title
+            images(first: 10) {
+              edges {
+                node {
+                  url
+                  altText
+                }
               }
             }
-          }
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
             }
+            onlineStoreUrl
           }
-          onlineStoreUrl
         }
       }
     }
   `;
   
   const productsResponse = await shopifyFetch<{
-    nodes: Array<{
-      id: string;
-      handle: string;
-      title: string;
-      images: {
-        edges: Array<{
-          node: {
-            url: string;
-            altText: string | null;
+    products: {
+      edges: Array<{
+        node: {
+          id: string;
+          handle: string;
+          title: string;
+          images: {
+            edges: Array<{
+              node: {
+                url: string;
+                altText: string | null;
+              };
+            }>;
           };
-        }>;
-      };
-      priceRange: {
-        minVariantPrice: {
-          amount: string;
-          currencyCode: string;
+          priceRange: {
+            minVariantPrice: {
+              amount: string;
+              currencyCode: string;
+            };
+          };
+          onlineStoreUrl: string;
         };
-      };
-      onlineStoreUrl: string;
-    }>;
+      }>;
+    };
   }>({
     query: productsQuery,
-    variables: { handles: productHandles.map(handle => `gid://shopify/Product/${handle}`) }
+    variables: { handles: productHandles.map(handle => `handle:${handle}`).join(" OR ") }
   });
   
-  return productsResponse.data.nodes.map(product => ({
-    id: product.id,
-    handle: product.handle,
-    title: product.title,
-    images: product.images.edges.map(edge => ({
-      url: edge.node.url,
-      altText: edge.node.altText || undefined
-    })),
-    priceRange: {
-      minVariantPrice: {
-        amount: product.priceRange.minVariantPrice.amount,
-        currencyCode: product.priceRange.minVariantPrice.currencyCode
-      }
-    },
-    onlineStoreUrl: product.onlineStoreUrl
-  }));
+  return productsResponse.data.products.edges.map((edge) => {
+    const product = edge.node;
+    return {
+      id: product.id,
+      handle: product.handle,
+      title: product.title,
+      images: product.images.edges.map((imgEdge: { node: { url: string; altText: string | null } }) => ({
+        url: imgEdge.node.url,
+        altText: imgEdge.node.altText || undefined
+      })),
+      priceRange: {
+        minVariantPrice: {
+          amount: product.priceRange.minVariantPrice.amount,
+          currencyCode: product.priceRange.minVariantPrice.currencyCode
+        }
+      },
+      onlineStoreUrl: product.onlineStoreUrl
+    };
+  });
 };

@@ -7,6 +7,7 @@ import { ShopifyProduct } from '../types/shopify';
 
 interface HomeProps {
   products: ShopifyProduct[];
+  metaobjectHandle?: string;
 }
 
 const Home: NextPage<HomeProps> = ({ products }) => {
