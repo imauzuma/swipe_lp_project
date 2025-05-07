@@ -92,18 +92,18 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     }
     
     const metaobjectQuery = `
-      query GetMetaobject($handle: String!) {
+      query GetMetaobject($handle: MetaobjectHandleInput!) {
         metaobject(handle: $handle) {
+          id
           handle
-          fields {
-            key
+          slides: field(key: "slides") {
+            type
             value
             references(first: 20) {
-              edges {
-                node {
-                  ... on Product {
-                    handle
-                  }
+              nodes {
+                ... on Product {
+                  id
+                  handle
                 }
               }
             }
@@ -112,33 +112,49 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }
     `;
     
+    console.log('Metaobject request details:', {
+      handle: metaobjectHandle,
+      type: 'lp_swipe_content' // Using lowercase as suggested by user
+    });
+    
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
+        id: string;
         handle: string;
-        fields: Array<{
-          key: string;
+        slides: {
+          type: string;
           value: string;
           references?: {
-            edges: Array<{
-              node: {
-                handle: string;
-              };
+            nodes: Array<{
+              id: string;
+              handle: string;
             }>;
           };
-        }>;
+        };
       };
     }>({
       query: metaobjectQuery,
-      variables: { handle: metaobjectHandle }
+      variables: { 
+        handle: { 
+          handle: metaobjectHandle,
+          type: "lp_swipe_content" // Using lowercase as suggested by user
+        } 
+      }
     });
     
-    const slidesField = metaobjectResponse.data.metaobject.fields.find(field => field.key === 'slides');
-    if (!slidesField || !slidesField.references) {
-      console.warn('No slides field or references found in metaobject');
+    console.log('Metaobject response:', {
+      hasMetaobject: !!metaobjectResponse.data.metaobject,
+      hasSlides: !!metaobjectResponse.data.metaobject?.slides,
+      hasReferences: !!metaobjectResponse.data.metaobject?.slides?.references,
+      referencesCount: metaobjectResponse.data.metaobject?.slides?.references?.nodes?.length || 0
+    });
+    
+    if (!metaobjectResponse.data.metaobject.slides.references?.nodes) {
+      console.warn('No product references found in metaobject slides field');
       return [];
     }
     
-    const productHandles = slidesField.references.edges.map(edge => edge.node.handle);
+    const productHandles = metaobjectResponse.data.metaobject.slides.references.nodes.map(node => node.handle);
     
     if (productHandles.length === 0) {
       console.warn('No product handles found in metaobject');
@@ -148,69 +164,62 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     console.log(`Found ${productHandles.length} product handles in metaobject`);
     
     const productsQuery = `
-      query GetProducts($handles: String!) {
-        products(first: 20, query: $handles) {
-          edges {
-            node {
-              id
-              handle
-              title
-              images(first: 10) {
-                edges {
-                  node {
-                    url
-                    altText
-                  }
+      query GetProducts($handles: [String!]!) {
+        nodes(ids: $handles) {
+          ... on Product {
+            id
+            handle
+            title
+            images(first: 10) {
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              onlineStoreUrl
             }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            onlineStoreUrl
           }
         }
       }
     `;
     
-    const queryString = productHandles.map(handle => `handle:${handle}`).join(" OR ");
-    console.log('Query string for products:', queryString);
+    const productGlobalIds = productHandles.map(handle => `gid://shopify/Product/${handle}`);
+    console.log('Product Global IDs:', productGlobalIds);
     
     const productsResponse = await shopifyFetch<{
-      products: {
-        edges: Array<{
-          node: {
-            id: string;
-            handle: string;
-            title: string;
-            images: {
-              edges: Array<{
-                node: {
-                  url: string;
-                  altText: string | null;
-                };
-              }>;
+      nodes: Array<{
+        id: string;
+        handle: string;
+        title: string;
+        images: {
+          edges: Array<{
+            node: {
+              url: string;
+              altText: string | null;
             };
-            priceRange: {
-              minVariantPrice: {
-                amount: string;
-                currencyCode: string;
-              };
-            };
-            onlineStoreUrl: string;
+          }>;
+        };
+        priceRange: {
+          minVariantPrice: {
+            amount: string;
+            currencyCode: string;
           };
-        }>;
-      };
+        };
+        onlineStoreUrl: string;
+      }>;
     }>({
       query: productsQuery,
-      variables: { handles: queryString }
+      variables: { handles: productGlobalIds }
     });
     
-    const products = productsResponse.data.products.edges.map((edge) => {
-      const product = edge.node;
+    const products = productsResponse.data.nodes.map((product) => {
       return {
         id: product.id,
         handle: product.handle,
