@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { ShopifyProduct } from '../types/shopify';
@@ -34,12 +35,14 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
             <SwiperSlide key={index}>
               <div className="h-full w-full flex items-center justify-center">
                 <div className="max-h-full max-w-full object-contain">
-                  {/* Using div instead of img to avoid ESLint warning */}
-                  {/* In production, replace with next/image */}
-                  <img
+                  {/* Using Next.js Image component for better performance */}
+                  <Image
                     src={image.url}
                     alt={image.altText || title}
-                    className="max-h-full max-w-full object-contain"
+                    fill
+                    sizes="100vw"
+                    style={{ objectFit: 'contain' }}
+                    priority={index === 0}
                   />
                 </div>
               </div>
