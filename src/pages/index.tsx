@@ -8,9 +8,10 @@ import { ShopifyProduct } from '../types/shopify';
 interface HomeProps {
   products: ShopifyProduct[];
   metaobjectHandle?: string;
+  error?: string | null;
 }
 
-const Home: NextPage<HomeProps> = ({ products }) => {
+const Home: NextPage<HomeProps> = ({ products, error }) => {
   return (
     <>
       <Head>
@@ -21,7 +22,20 @@ const Home: NextPage<HomeProps> = ({ products }) => {
       </Head>
       
       <main>
-        <VerticalSwipeContainer products={products} />
+        {error ? (
+          <div className="h-screen w-screen flex flex-col items-center justify-center p-5 text-center">
+            <h1 className="text-2xl font-bold mb-4">エラーが発生しました</h1>
+            <p className="mb-8 text-red-600">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-black text-white px-6 py-3 rounded-full"
+            >
+              再読み込み
+            </button>
+          </div>
+        ) : (
+          <VerticalSwipeContainer products={products} />
+        )}
       </main>
     </>
   );
@@ -29,6 +43,13 @@ const Home: NextPage<HomeProps> = ({ products }) => {
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
+    console.log('Environment variables available:', {
+      hasStoreDomain: !!process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN,
+      hasAccessToken: !!process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+      hasApiVersion: !!process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION,
+      hasMetaobjectHandle: !!process.env.NEXT_PUBLIC_LP_METAOBJECT_HANDLE
+    });
+    
     const metaobjectHandle = process.env.NEXT_PUBLIC_LP_METAOBJECT_HANDLE || '';
     
     if (!metaobjectHandle) {
@@ -36,25 +57,30 @@ export const getServerSideProps: GetServerSideProps = async () => {
       return {
         props: {
           products: [],
-          metaobjectHandle: ''
+          metaobjectHandle: '',
+          error: 'Metaobject handle not provided in environment variables'
         }
       };
     }
     
+    console.log('Fetching products for metaobject handle:', metaobjectHandle);
     const products = await getWorkspaceLPSlidesData(metaobjectHandle);
+    console.log(`Successfully fetched ${products.length} products`);
     
     return {
       props: {
         products,
-        metaobjectHandle
+        metaobjectHandle,
+        error: null
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching products:', error);
     return {
       props: {
         products: [],
-        metaobjectHandle: ''
+        metaobjectHandle: '',
+        error: error.message || 'Unknown error occurred while fetching products'
       }
     };
   }

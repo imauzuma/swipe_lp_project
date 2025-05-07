@@ -10,13 +10,21 @@ const shopifyFetch = async <T>({
   variables?: Record<string, unknown>;
 }): Promise<{ data: T }> => {
   try {
-    const endpoint = `https://${SHOPIFY_STORE_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
+    if (!SHOPIFY_STORE_DOMAIN) {
+      throw new Error('SHOPIFY_STORE_DOMAIN environment variable is not set');
+    }
+    if (!SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
+      throw new Error('SHOPIFY_STOREFRONT_ACCESS_TOKEN environment variable is not set');
+    }
+    
+    const cleanDomain = SHOPIFY_STORE_DOMAIN.replace(/^https?:\/\//, '');
+    const endpoint = `https://${cleanDomain}/api/${SHOPIFY_API_VERSION}/graphql.json`;
     
     console.log('Shopify API Request:', {
       endpoint,
       variables,
       hasToken: !!SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-      hasDomain: !!SHOPIFY_STORE_DOMAIN
+      apiVersion: SHOPIFY_API_VERSION
     });
     
     const response = await fetch(endpoint, {
@@ -33,18 +41,28 @@ const shopifyFetch = async <T>({
       console.error('Shopify API error response:', {
         status: response.status,
         statusText: response.statusText,
-        errorText: errorText.substring(0, 500) // Truncate long responses
+        errorText: errorText.substring(0, 500), // Truncate long responses
+        endpoint
       });
-      throw new Error(`Shopify API error: ${response.statusText}`);
+      throw new Error(`Shopify API error: ${response.statusText} (${response.status})`);
     }
     
     const result = await response.json();
     
+    if (result.errors) {
+      console.error('Shopify GraphQL errors:', JSON.stringify(result.errors, null, 2));
+      throw new Error(`GraphQL errors: ${result.errors.map((e: any) => e.message).join(', ')}`);
+    }
+    
     console.log('Shopify API Response Structure:', {
       hasData: !!result.data,
-      hasErrors: !!result.errors,
       dataKeys: result.data ? Object.keys(result.data) : []
     });
+    
+    if (!result.data) {
+      console.error('No data returned from Shopify API');
+      throw new Error('No data returned from Shopify API');
+    }
     
     return result;
   } catch (error) {
