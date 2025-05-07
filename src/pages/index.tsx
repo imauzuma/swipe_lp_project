@@ -74,13 +74,14 @@ export const getServerSideProps: GetServerSideProps = async () => {
         error: null
       }
     };
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Error fetching products:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred while fetching products';
     return {
       props: {
         products: [],
         metaobjectHandle: '',
-        error: error.message || 'Unknown error occurred while fetching products'
+        error: errorMessage
       }
     };
   }

@@ -51,7 +51,7 @@ const shopifyFetch = async <T>({
     
     if (result.errors) {
       console.error('Shopify GraphQL errors:', JSON.stringify(result.errors, null, 2));
-      throw new Error(`GraphQL errors: ${result.errors.map((e: any) => e.message).join(', ')}`);
+      throw new Error(`GraphQL errors: ${result.errors.map((e: {message: string}) => e.message).join(', ')}`);
     }
     
     console.log('Shopify API Response Structure:', {
