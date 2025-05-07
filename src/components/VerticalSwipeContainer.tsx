@@ -2,10 +2,10 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Mousewheel, Pagination } from 'swiper/modules';
 import ProductSlide from './ProductSlide';
-import { ShopifyProduct } from '../types/shopify';
+import { LPSlideProduct } from '../lib/shopify';
 
 interface VerticalSwipeContainerProps {
-  products: ShopifyProduct[];
+  products: LPSlideProduct[];
 }
 
 const VerticalSwipeContainer: React.FC<VerticalSwipeContainerProps> = ({ products }) => {

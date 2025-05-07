@@ -2,20 +2,17 @@ import React from 'react';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import { ShopifyProduct } from '../types/shopify';
+import { LPSlideProduct } from '../lib/shopify';
 
 interface ProductSlideProps {
-  product: ShopifyProduct;
+  product: LPSlideProduct;
 }
 
 const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
-  const { title, images, priceRange, onlineStoreUrl } = product;
+  const { title, images, price, productPageUrl } = product;
   
-  const formatPrice = (amount: string, currencyCode: string) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(parseFloat(amount));
+  const formatPrice = () => {
+    return price;
   };
   
   return (
@@ -58,14 +55,11 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
           <div>
             <h2 className="text-xl font-bold">{title}</h2>
             <p className="text-lg">
-              {formatPrice(
-                priceRange.minVariantPrice.amount,
-                priceRange.minVariantPrice.currencyCode
-              )}
+              {formatPrice()}
             </p>
           </div>
           <a
-            href={onlineStoreUrl}
+            href={productPageUrl || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium"

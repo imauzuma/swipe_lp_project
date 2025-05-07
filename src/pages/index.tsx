@@ -2,8 +2,7 @@ import React from 'react';
 import { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import VerticalSwipeContainer from '../components/VerticalSwipeContainer';
-import { ShopifyProduct } from '../types/shopify';
-import { getWorkspaceLPSlidesData } from '../lib/shopify';
+import { fetchLPSlidesData, LPSlideProduct } from '../lib/shopify';
 
 interface DebugInfo {
   timestamp: string;
@@ -15,7 +14,7 @@ interface DebugInfo {
 }
 
 interface HomeProps {
-  products: ShopifyProduct[];
+  products: LPSlideProduct[];
   metaobjectHandle?: string;
   error?: string | null;
   debugInfo?: DebugInfo | null;
@@ -73,7 +72,7 @@ export const getStaticProps: GetStaticProps = async () => {
     if (missingVars.length > 0) {
       console.warn(`Missing environment variables: ${missingVars.join(', ')}. Using dummy data.`);
       
-      const dummyProducts: ShopifyProduct[] = [
+      const dummyProducts: LPSlideProduct[] = [
         {
           id: 'dummy-id-1',
           handle: 'dummy-product-1',
@@ -82,13 +81,8 @@ export const getStaticProps: GetStaticProps = async () => {
             { url: 'https://cdn.shopify.com/s/files/1/0000/0000/products/placeholder.png', altText: 'テスト画像 1' },
             { url: 'https://cdn.shopify.com/s/files/1/0000/0000/products/placeholder.png', altText: 'テスト画像 2' }
           ],
-          priceRange: {
-            minVariantPrice: {
-              amount: '1000',
-              currencyCode: 'JPY'
-            }
-          },
-          onlineStoreUrl: 'https://example.com/product-1'
+          price: '¥1,000',
+          productPageUrl: 'https://example.com/product-1'
         },
         {
           id: 'dummy-id-2',
@@ -98,13 +92,8 @@ export const getStaticProps: GetStaticProps = async () => {
             { url: 'https://cdn.shopify.com/s/files/1/0000/0000/products/placeholder.png', altText: 'テスト画像 1' },
             { url: 'https://cdn.shopify.com/s/files/1/0000/0000/products/placeholder.png', altText: 'テスト画像 2' }
           ],
-          priceRange: {
-            minVariantPrice: {
-              amount: '2000',
-              currencyCode: 'JPY'
-            }
-          },
-          onlineStoreUrl: 'https://example.com/product-2'
+          price: '¥2,000',
+          productPageUrl: 'https://example.com/product-2'
         }
       ];
       
@@ -132,7 +121,7 @@ export const getStaticProps: GetStaticProps = async () => {
     }
     
     console.log('Fetching products from Shopify API with metaobject handle:', metaobjectHandle);
-    const products = await getWorkspaceLPSlidesData(metaobjectHandle);
+    const products = await fetchLPSlidesData(metaobjectHandle);
     
     if (!products || products.length === 0) {
       console.warn('No products returned from Shopify API');
