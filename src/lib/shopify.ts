@@ -94,16 +94,16 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     const metaobjectQuery = `
       query GetMetaobject($handle: MetaobjectHandleInput!) {
         metaobject(handle: $handle) {
+          id
           handle
-          fields {
-            key
+          slides: field(key: "slides") {
+            type
             value
             references(first: 20) {
-              edges {
-                node {
-                  ... on Product {
-                    handle
-                  }
+              nodes {
+                ... on Product {
+                  id
+                  handle
                 }
               }
             }
@@ -112,38 +112,49 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }
     `;
     
+    console.log('Metaobject request details:', {
+      handle: metaobjectHandle,
+      type: 'lp_swipe_content' // Using lowercase as suggested by user
+    });
+    
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
+        id: string;
         handle: string;
-        fields: Array<{
-          key: string;
+        slides: {
+          type: string;
           value: string;
           references?: {
-            edges: Array<{
-              node: {
-                handle: string;
-              };
+            nodes: Array<{
+              id: string;
+              handle: string;
             }>;
           };
-        }>;
+        };
       };
     }>({
       query: metaobjectQuery,
       variables: { 
         handle: { 
           handle: metaobjectHandle,
-          type: "LpSwipeContent" // Assuming the type is a camel-cased version of the metaobject definition
+          type: "lp_swipe_content" // Using lowercase as suggested by user
         } 
       }
     });
     
-    const slidesField = metaobjectResponse.data.metaobject.fields.find(field => field.key === 'slides');
-    if (!slidesField || !slidesField.references) {
-      console.warn('No slides field or references found in metaobject');
+    console.log('Metaobject response:', {
+      hasMetaobject: !!metaobjectResponse.data.metaobject,
+      hasSlides: !!metaobjectResponse.data.metaobject?.slides,
+      hasReferences: !!metaobjectResponse.data.metaobject?.slides?.references,
+      referencesCount: metaobjectResponse.data.metaobject?.slides?.references?.nodes?.length || 0
+    });
+    
+    if (!metaobjectResponse.data.metaobject.slides.references?.nodes) {
+      console.warn('No product references found in metaobject slides field');
       return [];
     }
     
-    const productHandles = slidesField.references.edges.map(edge => edge.node.handle);
+    const productHandles = metaobjectResponse.data.metaobject.slides.references.nodes.map(node => node.handle);
     
     if (productHandles.length === 0) {
       console.warn('No product handles found in metaobject');
