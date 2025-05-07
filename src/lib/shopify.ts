@@ -217,7 +217,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
         title: product.title,
         images: product.images.edges.map((imgEdge: { node: { url: string; altText: string | null } }) => ({
           url: imgEdge.node.url,
-          altText: imgEdge.node.altText || undefined
+          altText: imgEdge.node.altText || null
         })),
         priceRange: {
           minVariantPrice: {
