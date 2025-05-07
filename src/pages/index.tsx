@@ -1,5 +1,5 @@
 import React from 'react';
-import { GetServerSideProps, NextPage } from 'next';
+import { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 
 interface HomeProps {
@@ -25,8 +25,8 @@ const Home: NextPage<HomeProps> = ({ message }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
-  console.log('Simple test page getServerSideProps is running');
+export const getStaticProps: GetStaticProps = async () => {
+  console.log('Simple test page getStaticProps is running');
   
   return {
     props: {
