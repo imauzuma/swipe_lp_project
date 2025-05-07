@@ -1,5 +1,5 @@
 import React from 'react';
-import { GetServerSideProps, NextPage } from 'next';
+import { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import { getWorkspaceLPSlidesData } from '../lib/shopify';
 import VerticalSwipeContainer from '../components/VerticalSwipeContainer';
@@ -41,7 +41,7 @@ const Home: NextPage<HomeProps> = ({ products, error }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   try {
     console.log('Environment variables available:', {
       hasStoreDomain: !!process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN,
@@ -59,7 +59,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
           products: [],
           metaobjectHandle: '',
           error: 'Metaobject handle not provided in environment variables'
-        }
+        },
+        revalidate: 60 // Revalidate every 60 seconds
       };
     }
     
@@ -72,9 +73,10 @@ export const getServerSideProps: GetServerSideProps = async () => {
         products,
         metaobjectHandle,
         error: null
-      }
+      },
+      revalidate: 60 // Revalidate every 60 seconds
     };
-  } catch (error: Error | unknown) {
+  } catch (error) {
     console.error('Error fetching products:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred while fetching products';
     return {
@@ -82,7 +84,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
         products: [],
         metaobjectHandle: '',
         error: errorMessage
-      }
+      },
+      revalidate: 60 // Revalidate every 60 seconds
     };
   }
 };
