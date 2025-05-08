@@ -3,7 +3,7 @@ import { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import VerticalSwipeContainer from '../components/VerticalSwipeContainer';
 import { ShopifyProduct } from '../types/shopify';
-import { fetchLPSlidesData } from '../lib/shopify';
+import { getWorkspaceLPSlidesData } from '../lib/shopify';
 
 interface DebugInfo {
   timestamp: string;
@@ -132,7 +132,7 @@ export const getStaticProps: GetStaticProps = async () => {
     }
     
     console.log('Fetching products from Shopify API with metaobject handle:', metaobjectHandle);
-    const products = await fetchLPSlidesData(metaobjectHandle);
+    const products = await getWorkspaceLPSlidesData(metaobjectHandle);
     
     if (!products || products.length === 0) {
       console.warn('No products returned from Shopify API');
