@@ -70,14 +70,16 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
                 : "価格情報なし"}
             </p>
           </div>
-          <a
-            href={onlineStoreUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
-          >
-            商品詳細を見る
-          </a>
+          {onlineStoreUrl && (
+            <a
+              href={onlineStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              商品詳細を見る
+            </a>
+          )}
         </div>
       </div>
     </div>
