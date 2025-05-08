@@ -143,153 +143,170 @@ const shopifyFetch = async <T>({
 /**
  * Fetches product data for the LP from Shopify metaobject and products
  */
-export const getWorkspaceLPSlidesData = async ( // 関数名をfetchLPSlidesDataから変更
+export const getWorkspaceLPSlidesData = async (
   metaobjectHandleParam?: string
 ): Promise<LPSlideProduct[]> => {
   const metaobjectHandle = metaobjectHandleParam || LP_METAOBJECT_HANDLE_FROM_ENV;
 
   if (!metaobjectHandle) {
     console.error('Error: Metaobject handle is not defined.');
-    // エラーをスローしてgetServerSidePropsで処理する方が良い
-    throw new Error('Metaobject handle is missing.');
+    return []; // メタオブジェクトが見つからない場合は空配列を返す
   }
 
-  console.log(`Workspaceing LP slides data for metaobject handle: ${metaobjectHandle}`);
+  console.log(`Fetching LP slides data for metaobject handle: ${metaobjectHandle}`);
 
   // メタオブジェクトのタイプ名（Shopify Adminで確認した値）
   const METAOBJECT_TYPE_NAME = "lp_swipe_content"; // これは正しく設定されている前提
 
-  // --- 1. メタオブジェクト取得 ---
-  const metaobjectQuery = `
-    query GetMetaobject($handle: MetaobjectHandleInput!) { # 変数 $handle の型を MetaobjectHandleInput! に
-      metaobject(handle: $handle) {
-        id
-        handle
-        # フィールドキーを 'products_list' に修正
-        products_list: field(key: "products_list") {
-          references(first: 20) { # 取得する商品数を調整可能
-            nodes {
-              ... on Product {
-                id     # 商品ID (gid) を取得
-                handle # ハンドルも念のため取得
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  let productGids: string[] = [];
-
   try {
-    console.log('Requesting Metaobject...');
-    const metaobjectResponse = await shopifyFetch<{ metaobject: Metaobject | null }>({
-      query: metaobjectQuery,
-      variables: {
-        handle: {
-          handle: metaobjectHandle,
-          type: METAOBJECT_TYPE_NAME,
-        },
-      },
-    });
-
-    if (!metaobjectResponse.data?.metaobject) {
-      console.warn(`Metaobject with handle "${metaobjectHandle}" (type: "${METAOBJECT_TYPE_NAME}") not found.`);
-      return []; // メタオブジェクトが見つからない場合は空配列を返す
-    }
-
-    const productReferences = metaobjectResponse.data.metaobject.products_list?.references?.nodes;
-
-    if (!productReferences || productReferences.length === 0) {
-      console.warn('No product references found in metaobject "products_list" field.');
-      return []; // 商品参照がない場合は空配列を返す
-    }
-
-    productGids = productReferences.map(node => node.id).filter((id): id is string => !!id);
-
-    if (productGids.length === 0) {
-      console.warn('No valid product GIDs found in metaobject references.');
-      return []; // 有効なIDがない場合は空配列を返す
-    }
-
-    console.log(`Found ${productGids.length} product GIDs in metaobject:`, productGids);
-
-  } catch (error) {
-    console.error('Error fetching metaobject data:', error instanceof Error ? error.message : error);
-    // メタオブジェクト取得失敗時は後続処理に進めないのでエラーをスロー
-    throw new Error('Failed to fetch metaobject data from Shopify.');
-  }
-
-
-  // --- 2. 商品詳細情報の一括取得 ---
-  console.log(`Workspaceing details for ${productGids.length} products using GIDs.`);
-
-  // ★★★ ここからがエラー箇所だった部分の修正 ★★★
-  const productsQuery = `
-    query GetProductsByIds($ids: [ID!]!) { # 変数名を $ids に、型を [ID!]! に修正
-      nodes(ids: $ids) {             # 引数 ids に変数 $ids を使用
-        ... on Product {
+    // --- 1. メタオブジェクト取得 ---
+    const metaobjectQuery = `
+      query GetMetaobject($handle: MetaobjectHandleInput!) { # 変数 $handle の型を MetaobjectHandleInput! に
+        metaobject(handle: $handle) {
           id
           handle
-          title
-          onlineStoreUrl
-          images(first: 10) { # 表示に必要な画像数を指定
-            edges {
-              node {
-                url
-                altText
+          # フィールドキーを 'products_list' に修正
+          products_list: field(key: "products_list") {
+            references(first: 20) { # 取得する商品数を調整可能
+              nodes {
+                ... on Product {
+                  id     # 商品ID (gid) を取得
+                  handle # ハンドルも念のため取得
+                }
               }
-            }
-          }
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
             }
           }
         }
       }
-    }
-  `;
+    `;
 
-  try {
-    const productsResponse = await shopifyFetch<{ nodes: (Product | null)[] }>({
-      query: productsQuery,
-      variables: { ids: productGids }, // ★★★ キー名を 'ids' に修正 ★★★
+    const metaobjectResponse = await shopifyFetch<{
+      metaobject: {
+        id: string;
+        handle: string;
+        products_list?: {
+          references?: {
+            nodes: Array<{
+              id: string;
+              handle: string;
+            }>;
+          };
+        };
+      };
+    }>({
+      query: metaobjectQuery,
+      variables: {
+        handle: { // MetaobjectHandleInput オブジェクト形式で渡す
+          handle: metaobjectHandle,
+          type: METAOBJECT_TYPE_NAME
+        }
+      }
     });
-
-    if (!productsResponse.data?.nodes) {
-      console.warn('No product data nodes returned from Shopify API when fetching by GIDs.');
-      return []; // 商品データが返ってこない場合は空配列
+    
+    if (!metaobjectResponse.data?.metaobject) {
+      console.warn(`Metaobject with handle "${metaobjectHandle}" not found`);
+      return [];
     }
-
+    
+    const productReferences = metaobjectResponse.data.metaobject.products_list?.references?.nodes;
+    
+    if (!productReferences || productReferences.length === 0) {
+      console.warn('No product references found in metaobject "products_list" field');
+      return [];
+    }
+    
+    const productGids = productReferences.map(node => node.id);
+    
+    if (productGids.length === 0) {
+      console.warn('No product GIDs found in metaobject');
+      return [];
+    }
+    
+    console.log(`Found ${productGids.length} product GIDs in metaobject`);
+    
+    // --- 2. 商品詳細情報の一括取得 ---
+    const productsQuery = `
+      query GetProductsByIds($ids: [ID!]!) { # 変数名を $ids に、型を [ID!]! に修正
+        nodes(ids: $ids) {             # 引数 ids に変数 $ids を使用
+          ... on Product {
+            id
+            handle
+            title
+            onlineStoreUrl
+            images(first: 10) { # 表示に必要な画像数を指定
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const productsResponse = await shopifyFetch<{
+      nodes: Array<{
+        id: string;
+        handle: string;
+        title: string;
+        images: {
+          edges: Array<{
+            node: {
+              url: string;
+              altText: string | null;
+            };
+          }>;
+        };
+        priceRange: {
+          minVariantPrice: {
+            amount: string;
+            currencyCode: string;
+          };
+        };
+        onlineStoreUrl: string | null;
+      }>;
+    }>({
+      query: productsQuery,
+      variables: { ids: productGids } // キー名を 'ids' に修正
+    });
+    
+    if (!productsResponse.data?.nodes || productsResponse.data.nodes.length === 0) {
+      console.warn('No products found with the provided GIDs');
+      return [];
+    }
+    
     // --- 3. データ整形 ---
     const lpSlides: LPSlideProduct[] = productsResponse.data.nodes
-      .filter((product): product is Product => product !== null) // nullを除外
+      .filter((product): product is any => product !== null) // nullを除外
       .map((product) => ({
         id: product.id,
         handle: product.handle,
         title: product.title,
-        images: product.images.edges.map(edge => ({
-          url: edge.node.url,
-          // altText が null の場合に undefined にならないように修正
-          altText: edge.node.altText ?? null, // null合体演算子でnullならnull、そうでなければ値
+        images: product.images.edges.map((imgEdge) => ({
+          url: imgEdge.node.url,
+          altText: imgEdge.node.altText || null // null を許容するように修正
         })),
         // 価格を整形（通貨記号とロケールに合わせたフォーマット）
         // 注意: Intl.NumberFormat はサーバーサイドでのみ利用可能。クライアントサイドで使う場合は別途考慮が必要。
         price: product.priceRange?.minVariantPrice 
           ? new Intl.NumberFormat('ja-JP', { style: 'currency', currency: product.priceRange.minVariantPrice.currencyCode }).format(parseFloat(product.priceRange.minVariantPrice.amount))
           : "価格情報なし", // priceRangeまたはminVariantPriceがない場合のデフォルト表示
-        productPageUrl: product.onlineStoreUrl,
+        productPageUrl: product.onlineStoreUrl || null // null を許容するように修正
       }));
-
+    
     console.log(`Successfully processed ${lpSlides.length} products for LP.`);
     return lpSlides;
-
+    
   } catch (error) {
-    console.error('Error fetching or processing product details:', error instanceof Error ? error.message : error);
-    // 商品詳細取得・処理失敗時もエラーをスロー
-    throw new Error('Failed to fetch or process product details from Shopify.');
+    console.error('Error in getWorkspaceLPSlidesData:', error instanceof Error ? error.message : error);
+    return [];
   }
 };
