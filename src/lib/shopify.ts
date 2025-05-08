@@ -290,7 +290,7 @@ export const getWorkspaceLPSlidesData = async (
         id: product.id,
         handle: product.handle,
         title: product.title,
-        images: product.images.edges.map((imgEdge) => ({
+        images: product.images.edges.map((imgEdge: ProductImageEdge) => ({
           url: imgEdge.node.url,
           altText: imgEdge.node.altText || null // null を許容するように修正
         })),
