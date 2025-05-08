@@ -165,8 +165,8 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     console.log(`Found ${productHandles.length} product handles in metaobject:`, productHandles);
     
     const productsQuery = `
-      query GetProducts($handles: [String!]!) {
-        nodes(ids: $handles) {
+      query GetProductsByIds($ids: [ID!]!) {
+        nodes(ids: $ids) {
           ... on Product {
             id
             handle
@@ -217,7 +217,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }>;
     }>({
       query: productsQuery,
-      variables: { handles: productGlobalIds }
+      variables: { ids: productGlobalIds }
     });
     
     const products = productsResponse.data.nodes.map((product) => {
