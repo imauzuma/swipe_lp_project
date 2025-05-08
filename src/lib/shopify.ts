@@ -278,7 +278,9 @@ export const getWorkspaceLPSlidesData = async ( // 関数名をfetchLPSlidesData
         })),
         // 価格を整形（通貨記号とロケールに合わせたフォーマット）
         // 注意: Intl.NumberFormat はサーバーサイドでのみ利用可能。クライアントサイドで使う場合は別途考慮が必要。
-        price: new Intl.NumberFormat('ja-JP', { style: 'currency', currency: product.priceRange.minVariantPrice.currencyCode }).format(parseFloat(product.priceRange.minVariantPrice.amount)),
+        price: product.priceRange?.minVariantPrice 
+          ? new Intl.NumberFormat('ja-JP', { style: 'currency', currency: product.priceRange.minVariantPrice.currencyCode }).format(parseFloat(product.priceRange.minVariantPrice.amount))
+          : "価格情報なし", // priceRangeまたはminVariantPriceがない場合のデフォルト表示
         productPageUrl: product.onlineStoreUrl,
       }));
 
