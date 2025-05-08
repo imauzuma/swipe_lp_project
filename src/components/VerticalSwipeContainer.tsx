@@ -71,7 +71,11 @@ const VerticalSwipeContainer: React.FC<VerticalSwipeContainerProps> = ({ product
     >
       {products.map((product, index) => (
         <SwiperSlide key={index} className="h-full">
-          <ProductSlide product={product} />
+          <ProductSlide 
+            product={product} 
+            index={index} 
+            totalProducts={products.length} 
+          />
         </SwiperSlide>
       ))}
       

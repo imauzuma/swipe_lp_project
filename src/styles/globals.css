@@ -29,9 +29,9 @@ html, body {
 /* Navigation arrows */
 .swiper-button-prev,
 .swiper-button-next {
-  background-color: rgba(0, 0, 0, 0.5);
-  width: 40px !important;
-  height: 40px !important;
+  background-color: rgba(128, 128, 128, 0.7);
+  width: 36px !important;
+  height: 36px !important;
   border-radius: 50%;
   color: white;
   transition: all 0.2s ease;
@@ -40,24 +40,24 @@ html, body {
 
 .swiper-button-prev:hover,
 .swiper-button-next:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(128, 128, 128, 0.9);
 }
 
 .swiper-button-prev:after,
 .swiper-button-next:after {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
 }
 
-/* Pagination */
+/* Pagination and Counter */
 .swiper-pagination-fraction {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(128, 128, 128, 0.7);
   color: white;
   border-radius: 9999px;
   padding: 4px 10px;
   width: auto !important;
-  left: auto !important;
-  right: 16px;
+  left: 16px !important;
+  right: auto;
   top: 16px;
   bottom: auto;
   font-size: 12px;
@@ -90,10 +90,27 @@ html, body {
   background-color: white !important;
 }
 
-/* Product slide styles */
+/* Product title and info */
 .product-slide-info {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 20px;
+  background: white;
+  padding: 15px;
+  border-top: 1px solid #eee;
+}
+
+/* Product detail button */
+a[href*="onlineStoreUrl"] {
+  background-color: white;
+  color: black;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  z-index: 10;
+  text-decoration: none;
 }
 
 /* Product image container */
@@ -102,17 +119,18 @@ html, body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background-color: #f5f5f5;
 }
 
 .product-swiper img {
-  max-height: 70vh;
-  max-width: 100%;
-  object-fit: contain;
+  max-height: 80vh;
+  width: 100%;
+  object-fit: cover;
 }
 
 @media (min-width: 768px) {
   .product-swiper img {
-    max-height: 60vh;
+    max-height: 70vh;
   }
 }
 

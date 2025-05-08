@@ -5,10 +5,12 @@ import { ShopifyProduct } from '../types/shopify';
 
 interface ProductSlideProps {
   product: ShopifyProduct;
+  index: number;
+  totalProducts: number;
 }
 
-const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
-  const { title, images, priceRange, onlineStoreUrl } = product;
+const ProductSlide: React.FC<ProductSlideProps> = ({ product, index, totalProducts }) => {
+  const { title, images, onlineStoreUrl } = product;
   const [showSwipeGuide, setShowSwipeGuide] = useState(true);
   
   useEffect(() => {
@@ -19,54 +21,46 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
     return () => clearTimeout(timer);
   }, []);
   
-  const formatPrice = (amount: string, currencyCode: string) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(parseFloat(amount));
-  };
-  
   return (
-    <div className="h-full w-full flex flex-col relative bg-gray-50">
-      {/* Horizontal Swiper for product images */}
-      <div className="flex-grow relative overflow-hidden">
+    <div className="h-full w-full flex flex-col relative bg-white">
+      {/* Product Image Container */}
+      <div className="flex-grow relative overflow-hidden bg-gray-100">
         <Swiper
           modules={[Navigation, Pagination]}
           navigation={{
             nextEl: '.swiper-button-next',
             prevEl: '.swiper-button-prev',
           }}
-          pagination={{ 
-            type: 'fraction',
-            el: '.swiper-pagination'
-          }}
+          pagination={false}
           className="h-full w-full product-swiper"
         >
-          {images.map((image, index) => (
-            <SwiperSlide key={index} className="flex items-center justify-center">
-              <div className="relative h-full w-full flex items-center justify-center p-4">
+          {images.map((image, idx) => (
+            <SwiperSlide key={idx} className="flex items-center justify-center">
+              <div className="relative h-full w-full flex items-center justify-center">
                 <img
                   src={image.url}
                   alt={image.altText || title}
-                  className="max-h-[70vh] max-w-full object-contain"
-                  loading={index === 0 ? "eager" : "lazy"}
+                  className="w-full h-full object-cover"
+                  loading={idx === 0 ? "eager" : "lazy"}
                 />
               </div>
             </SwiperSlide>
           ))}
           
+          {/* Image Counter - Top Left */}
+          <div className="absolute top-3 left-3 z-10 bg-gray-700 bg-opacity-70 text-white text-sm px-3 py-1 rounded-full">
+            {index + 1} / {totalProducts}
+          </div>
+          
           {/* Custom navigation arrows */}
           <div className="swiper-button-prev"></div>
           <div className="swiper-button-next"></div>
-          
-          {/* Custom pagination */}
-          <div className="swiper-pagination"></div>
-          
-          {/* Slide counter */}
-          <div className="absolute top-4 left-4 z-10 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
-            {product.id.split('/').pop()?.split('?')[0]}
-          </div>
         </Swiper>
+      </div>
+      
+      {/* Product Title */}
+      <div className="px-4 py-3 bg-white">
+        <h2 className="text-xl font-bold text-black">{title}</h2>
       </div>
       
       {/* Swipe guide overlay */}
@@ -93,32 +87,17 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
         </div>
       )}
       
-      {/* Product info overlay at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black to-transparent text-white z-10">
-        <div className="flex justify-between items-end">
-          <div className="flex-1 mr-3">
-            <h2 className="text-xl font-bold truncate">{title}</h2>
-            <p className="text-lg font-medium">
-              {priceRange?.minVariantPrice 
-                ? formatPrice(
-                    priceRange.minVariantPrice.amount,
-                    priceRange.minVariantPrice.currencyCode
-                  )
-                : "価格情報なし"}
-            </p>
-          </div>
-          {onlineStoreUrl && (
-            <a
-              href={onlineStoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors whitespace-nowrap flex-shrink-0"
-            >
-              商品詳細を見る
-            </a>
-          )}
-        </div>
-      </div>
+      {/* Product Detail Button */}
+      {onlineStoreUrl && (
+        <a
+          href={onlineStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-20 right-4 z-10 bg-white text-black px-4 py-2 rounded-full text-sm font-medium shadow-lg"
+        >
+          商品詳細を見る
+        </a>
+      )}
     </div>
   );
 };
