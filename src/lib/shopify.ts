@@ -82,7 +82,7 @@ const shopifyFetch = async <T>({
  * Fetches product data for the LP from Shopify metaobject and products
  * @param metaobjectHandle - Handle of the metaobject to fetch. Defaults to LP_METAOBJECT_HANDLE from env.
  */
-export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_METAOBJECT_HANDLE) => {
+export const fetchLPSlidesData = async (metaobjectHandle: string = LP_METAOBJECT_HANDLE) => {
   try {
     console.log('Fetching metaobject data for handle:', metaobjectHandle);
     
@@ -91,19 +91,20 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       return [];
     }
     
+    const METAOBJECT_TYPE_NAME = "lp_swipe_content";
+    
     const metaobjectQuery = `
-      query GetMetaobject($handle: String!) {
+      query GetMetaobject($handle: MetaobjectHandleInput!) { # 変数 $handle の型を MetaobjectHandleInput! に
         metaobject(handle: $handle) {
+          id
           handle
-          fields {
-            key
-            value
-            references(first: 20) {
-              edges {
-                node {
-                  ... on Product {
-                    handle
-                  }
+          # フィールドキーを 'products_list' に修正
+          products_list: field(key: "products_list") {
+            references(first: 20) { # 取得する商品数を調整可能
+              nodes {
+                ... on Product {
+                  id     # 商品ID (gid) を取得
+                  handle # ハンドルも念のため取得
                 }
               }
             }
@@ -114,110 +115,114 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
+        id: string;
         handle: string;
-        fields: Array<{
-          key: string;
-          value: string;
+        products_list?: {
           references?: {
-            edges: Array<{
-              node: {
-                handle: string;
-              };
+            nodes: Array<{
+              id: string;
+              handle: string;
             }>;
           };
-        }>;
+        };
       };
     }>({
       query: metaobjectQuery,
-      variables: { handle: metaobjectHandle }
+      variables: {
+        handle: { // MetaobjectHandleInput オブジェクト形式で渡す
+          handle: metaobjectHandle,
+          type: METAOBJECT_TYPE_NAME
+        }
+      }
     });
     
-    const slidesField = metaobjectResponse.data.metaobject.fields.find(field => field.key === 'slides');
-    if (!slidesField || !slidesField.references) {
-      console.warn('No slides field or references found in metaobject');
+    if (!metaobjectResponse.data.metaobject) {
+      console.warn(`Metaobject with handle "${metaobjectHandle}" not found`);
       return [];
     }
     
-    const productHandles = slidesField.references.edges.map(edge => edge.node.handle);
+    const productReferences = metaobjectResponse.data.metaobject.products_list?.references?.nodes;
     
-    if (productHandles.length === 0) {
-      console.warn('No product handles found in metaobject');
+    if (!productReferences || productReferences.length === 0) {
+      console.warn('No product references found in metaobject "products_list" field');
       return [];
     }
     
-    console.log(`Found ${productHandles.length} product handles in metaobject`);
+    const productGids = productReferences.map(node => node.id);
+    
+    if (productGids.length === 0) {
+      console.warn('No product GIDs found in metaobject');
+      return [];
+    }
+    
+    console.log(`Found ${productGids.length} product GIDs in metaobject`);
     
     const productsQuery = `
-      query GetProducts($handles: String!) {
-        products(first: 20, query: $handles) {
-          edges {
-            node {
-              id
-              handle
-              title
-              images(first: 10) {
-                edges {
-                  node {
-                    url
-                    altText
-                  }
+      query GetProductsByIds($ids: [ID!]!) { # 変数名を $ids に、型を [ID!]! に修正
+        nodes(ids: $ids) {             # 引数 ids に変数 $ids を使用
+          ... on Product {
+            id
+            handle
+            title
+            onlineStoreUrl
+            images(first: 10) { # 表示に必要な画像数を指定
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
+            }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
               }
-              onlineStoreUrl
             }
           }
         }
       }
     `;
     
-    const queryString = productHandles.map(handle => `handle:${handle}`).join(" OR ");
-    console.log('Query string for products:', queryString);
-    
     const productsResponse = await shopifyFetch<{
-      products: {
-        edges: Array<{
-          node: {
-            id: string;
-            handle: string;
-            title: string;
-            images: {
-              edges: Array<{
-                node: {
-                  url: string;
-                  altText: string | null;
-                };
-              }>;
+      nodes: Array<{
+        id: string;
+        handle: string;
+        title: string;
+        images: {
+          edges: Array<{
+            node: {
+              url: string;
+              altText: string | null;
             };
-            priceRange: {
-              minVariantPrice: {
-                amount: string;
-                currencyCode: string;
-              };
-            };
-            onlineStoreUrl: string;
+          }>;
+        };
+        priceRange: {
+          minVariantPrice: {
+            amount: string;
+            currencyCode: string;
           };
-        }>;
-      };
+        };
+        onlineStoreUrl: string | null;
+      }>;
     }>({
       query: productsQuery,
-      variables: { handles: queryString }
+      variables: { ids: productGids } // キー名を 'ids' に修正
     });
     
-    const products = productsResponse.data.products.edges.map((edge) => {
-      const product = edge.node;
+    if (!productsResponse.data.nodes || productsResponse.data.nodes.length === 0) {
+      console.warn('No products found with the provided GIDs');
+      return [];
+    }
+    
+    const products = productsResponse.data.nodes.map((product) => {
       return {
         id: product.id,
         handle: product.handle,
         title: product.title,
-        images: product.images.edges.map((imgEdge: { node: { url: string; altText: string | null } }) => ({
+        images: product.images.edges.map((imgEdge) => ({
           url: imgEdge.node.url,
-          altText: imgEdge.node.altText || undefined
+          altText: imgEdge.node.altText || null // null を許容するように修正
         })),
         priceRange: {
           minVariantPrice: {
@@ -225,7 +230,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
             currencyCode: product.priceRange.minVariantPrice.currencyCode
           }
         },
-        onlineStoreUrl: product.onlineStoreUrl
+        onlineStoreUrl: product.onlineStoreUrl || null // null を許容するように修正
       };
     });
     
@@ -233,7 +238,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     return products;
     
   } catch (error) {
-    console.error('Error in getWorkspaceLPSlidesData:', error);
+    console.error('Error in fetchLPSlidesData:', error);
     return [];
   }
 };
