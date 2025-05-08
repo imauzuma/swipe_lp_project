@@ -13,10 +13,10 @@ export interface ShopifyProduct {
   handle: string;
   title: string;
   images: ShopifyImage[];
-  priceRange: {
+  priceRange?: {
     minVariantPrice: ShopifyPrice;
   };
-  onlineStoreUrl: string;
+  onlineStoreUrl: string | null;
 }
 
 export interface ShopifyMetaobject {

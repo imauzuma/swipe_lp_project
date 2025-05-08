@@ -7,4 +7,42 @@
 @import 'swiper/css/navigation';
 @import 'swiper/css/pagination';
 
-/* Add any additional custom styles below */
+/* Custom styles for Swiper components */
+.product-swiper {
+  --swiper-navigation-size: 24px;
+  --swiper-theme-color: #ffffff;
+  --swiper-pagination-color: #ffffff;
+}
+
+.swiper-button-prev,
+.swiper-button-next {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50%;
+  color: white;
+}
+
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 18px;
+}
+
+.swiper-pagination-fraction {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  width: auto !important;
+  left: auto !important;
+  right: 16px;
+  top: 16px;
+  bottom: auto;
+  font-size: 12px;
+}
+
+/* Product slide styles */
+.product-slide-info {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 20px;
+}
