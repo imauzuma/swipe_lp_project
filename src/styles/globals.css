@@ -6,11 +6,18 @@
 @import 'swiper/css';
 @import 'swiper/css/navigation';
 @import 'swiper/css/pagination';
+@import 'swiper/css/effect-fade';
 
 /* Custom styles for Swiper components */
 .product-swiper {
   --swiper-navigation-size: 24px;
   --swiper-theme-color: #ffffff;
+  --swiper-pagination-color: #ffffff;
+}
+
+.vertical-swiper {
+  --swiper-pagination-progressbar-bg-color: rgba(255, 255, 255, 0.25);
+  --swiper-pagination-progressbar-size: 4px;
   --swiper-pagination-color: #ffffff;
 }
 
@@ -41,8 +48,17 @@
   font-size: 12px;
 }
 
+.swiper-pagination-progressbar {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.swiper-pagination-progressbar .swiper-pagination-progressbar-fill {
+  background-color: #ffffff;
+}
+
 /* Product slide styles */
 .product-slide-info {
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   padding: 20px;
+  padding-bottom: 30px;
 }
