@@ -143,7 +143,7 @@ const shopifyFetch = async <T>({
 /**
  * Fetches product data for the LP from Shopify metaobject and products
  */
-export const fetchLPSlidesData = async ( // 関数名をfetchLPSlidesDataに変更 (getWorkspaceLPSlidesDataではない前提)
+export const getWorkspaceLPSlidesData = async ( // 関数名をfetchLPSlidesDataから変更
   metaobjectHandleParam?: string
 ): Promise<LPSlideProduct[]> => {
   const metaobjectHandle = metaobjectHandleParam || LP_METAOBJECT_HANDLE_FROM_ENV;
