@@ -113,7 +113,10 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     `;
     
     console.log('Using metaobject type:', METAOBJECT_TYPE_NAME);
-    
+    console.log('Metaobject request details:', {
+      handle: metaobjectHandle,
+      type: METAOBJECT_TYPE_NAME // Using lowercase as suggested by user
+    });
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
         id: string;
@@ -162,69 +165,62 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
     console.log(`Found ${productHandles.length} product handles in metaobject:`, productHandles);
     
     const productsQuery = `
-      query GetProducts($handles: String!) {
-        products(first: 20, query: $handles) {
-          edges {
-            node {
-              id
-              handle
-              title
-              images(first: 10) {
-                edges {
-                  node {
-                    url
-                    altText
-                  }
+      query GetProducts($handles: [String!]!) {
+        nodes(ids: $handles) {
+          ... on Product {
+            id
+            handle
+            title
+            images(first: 10) {
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              onlineStoreUrl
             }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            onlineStoreUrl
           }
         }
       }
     `;
     
-    const queryString = productHandles.map((handle: string) => `handle:${handle}`).join(" OR ");
-    console.log('Query string for products:', queryString);
+    const productGlobalIds = productHandles.map(handle => `gid://shopify/Product/${handle}`);
+    console.log('Product Global IDs:', productGlobalIds);
     
     const productsResponse = await shopifyFetch<{
-      products: {
-        edges: Array<{
-          node: {
-            id: string;
-            handle: string;
-            title: string;
-            images: {
-              edges: Array<{
-                node: {
-                  url: string;
-                  altText: string | null;
-                };
-              }>;
+      nodes: Array<{
+        id: string;
+        handle: string;
+        title: string;
+        images: {
+          edges: Array<{
+            node: {
+              url: string;
+              altText: string | null;
             };
-            priceRange: {
-              minVariantPrice: {
-                amount: string;
-                currencyCode: string;
-              };
-            };
-            onlineStoreUrl: string;
+          }>;
+        };
+        priceRange: {
+          minVariantPrice: {
+            amount: string;
+            currencyCode: string;
           };
-        }>;
-      };
+        };
+        onlineStoreUrl: string;
+      }>;
     }>({
       query: productsQuery,
-      variables: { handles: queryString }
+      variables: { handles: productGlobalIds }
     });
     
-    const products = productsResponse.data.products.edges.map((edge) => {
-      const product = edge.node;
+    const products = productsResponse.data.nodes.map((product) => {
       return {
         id: product.id,
         handle: product.handle,
