@@ -62,10 +62,12 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
           <div>
             <h2 className="text-xl font-bold">{title}</h2>
             <p className="text-lg">
-              {formatPrice(
-                priceRange.minVariantPrice.amount,
-                priceRange.minVariantPrice.currencyCode
-              )}
+              {priceRange?.minVariantPrice 
+                ? formatPrice(
+                    priceRange.minVariantPrice.amount,
+                    priceRange.minVariantPrice.currencyCode
+                  )
+                : "価格情報なし"}
             </p>
           </div>
           <a
