@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Mousewheel, Pagination } from 'swiper/modules';
 import ProductSlide from './ProductSlide';
@@ -9,6 +9,20 @@ interface VerticalSwipeContainerProps {
 }
 
 const VerticalSwipeContainer: React.FC<VerticalSwipeContainerProps> = ({ products }) => {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkIfDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    
+    checkIfDesktop();
+    
+    window.addEventListener('resize', checkIfDesktop);
+    
+    return () => window.removeEventListener('resize', checkIfDesktop);
+  }, []);
+
   if (!products || products.length === 0) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
@@ -34,37 +48,58 @@ const VerticalSwipeContainer: React.FC<VerticalSwipeContainerProps> = ({ product
     );
   }
   
+  const swiperContent = (
+    <Swiper
+      direction={'vertical'}
+      slidesPerView={1}
+      spaceBetween={0}
+      mousewheel={{
+        sensitivity: 1,
+        releaseOnEdges: true
+      }}
+      pagination={{
+        clickable: true,
+        type: 'progressbar',
+        el: '.swiper-pagination-vertical'
+      }}
+      modules={[Mousewheel, Pagination]}
+      className="h-full w-full"
+      speed={600}
+      threshold={20}
+      touchAngle={45}
+      resistanceRatio={0.85}
+    >
+      {products.map((product, index) => (
+        <SwiperSlide key={index} className="h-full">
+          <ProductSlide product={product} />
+        </SwiperSlide>
+      ))}
+      
+      {/* Custom vertical pagination */}
+      <div className="swiper-pagination-vertical"></div>
+    </Swiper>
+  );
+  
+  if (isDesktop) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="relative w-[375px] h-[812px] bg-white rounded-[40px] shadow-2xl overflow-hidden">
+          {/* Phone frame */}
+          <div className="absolute top-0 left-0 right-0 h-6 bg-black rounded-t-[40px] z-10">
+            <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-400 rounded-full"></div>
+          </div>
+          {/* Content */}
+          <div className="h-full w-full pt-6">
+            {swiperContent}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50">
-      <Swiper
-        direction={'vertical'}
-        slidesPerView={1}
-        spaceBetween={0}
-        mousewheel={{
-          sensitivity: 1,
-          releaseOnEdges: true
-        }}
-        pagination={{
-          clickable: true,
-          type: 'progressbar',
-          el: '.swiper-pagination-vertical'
-        }}
-        modules={[Mousewheel, Pagination]}
-        className="h-full w-full"
-        speed={600}
-        threshold={20}
-        touchAngle={45}
-        resistanceRatio={0.85}
-      >
-        {products.map((product, index) => (
-          <SwiperSlide key={index} className="h-full">
-            <ProductSlide product={product} />
-          </SwiperSlide>
-        ))}
-        
-        {/* Custom vertical pagination */}
-        <div className="swiper-pagination-vertical"></div>
-      </Swiper>
+      {swiperContent}
     </div>
   );
 };
