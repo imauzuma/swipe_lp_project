@@ -27,9 +27,9 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
   };
   
   return (
-    <div className="h-screen w-full flex flex-col relative bg-gray-50">
+    <div className="h-full w-full flex flex-col relative bg-gray-50">
       {/* Horizontal Swiper for product images */}
-      <div className="flex-grow relative">
+      <div className="flex-grow relative overflow-hidden">
         <Swiper
           modules={[Navigation, Pagination]}
           navigation={{
@@ -44,11 +44,11 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
         >
           {images.map((image, index) => (
             <SwiperSlide key={index} className="flex items-center justify-center">
-              <div className="relative h-full w-full flex items-center justify-center">
+              <div className="relative h-full w-full flex items-center justify-center p-4">
                 <img
                   src={image.url}
                   alt={image.altText || title}
-                  className="max-h-full max-w-full object-contain"
+                  className="max-h-[70vh] max-w-full object-contain"
                   loading={index === 0 ? "eager" : "lazy"}
                 />
               </div>
@@ -73,7 +73,7 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
       {showSwipeGuide && (
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <div className="bg-black bg-opacity-70 text-white px-8 py-6 rounded-lg flex flex-col items-center max-w-xs">
-            <div className="mb-2">
+            <div className="mb-2 swipe-guide-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 19V5M5 12l7-7 7 7"/>
               </svg>
@@ -96,7 +96,7 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
       {/* Product info overlay at the bottom */}
       <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black to-transparent text-white z-10">
         <div className="flex justify-between items-end">
-          <div>
+          <div className="flex-1 mr-3">
             <h2 className="text-xl font-bold truncate">{title}</h2>
             <p className="text-lg font-medium">
               {priceRange?.minVariantPrice 
@@ -112,7 +112,7 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product }) => {
               href={onlineStoreUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+              className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors whitespace-nowrap flex-shrink-0"
             >
               商品詳細を見る
             </a>
