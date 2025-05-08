@@ -91,14 +91,14 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       return [];
     }
     
+    const METAOBJECT_TYPE_NAME = "lp_swipe_content";
+    
     const metaobjectQuery = `
       query GetMetaobject($handle: MetaobjectHandleInput!) {
         metaobject(handle: $handle) {
           id
           handle
-          slides: field(key: "slides") {
-            type
-            value
+          products_list: field(key: "products_list") {
             references(first: 20) {
               nodes {
                 ... on Product {
@@ -112,18 +112,16 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }
     `;
     
+    console.log('Using metaobject type:', METAOBJECT_TYPE_NAME);
     console.log('Metaobject request details:', {
       handle: metaobjectHandle,
-      type: 'lp_swipe_content' // Using lowercase as suggested by user
+      type: METAOBJECT_TYPE_NAME // Using lowercase as suggested by user
     });
-    
     const metaobjectResponse = await shopifyFetch<{
       metaobject: {
         id: string;
         handle: string;
-        slides: {
-          type: string;
-          value: string;
+        products_list?: {
           references?: {
             nodes: Array<{
               id: string;
@@ -136,36 +134,39 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       query: metaobjectQuery,
       variables: { 
         handle: { 
-          handle: metaobjectHandle,
-          type: "lp_swipe_content" // Using lowercase as suggested by user
+          handle: metaobjectHandle, 
+          type: METAOBJECT_TYPE_NAME 
         } 
       }
     });
     
     console.log('Metaobject response:', {
-      hasMetaobject: !!metaobjectResponse.data.metaobject,
-      hasSlides: !!metaobjectResponse.data.metaobject?.slides,
-      hasReferences: !!metaobjectResponse.data.metaobject?.slides?.references,
-      referencesCount: metaobjectResponse.data.metaobject?.slides?.references?.nodes?.length || 0
+      id: metaobjectResponse.data.metaobject.id,
+      handle: metaobjectResponse.data.metaobject.handle,
+      hasProductsList: !!metaobjectResponse.data.metaobject.products_list,
+      hasReferences: !!metaobjectResponse.data.metaobject.products_list?.references,
+      hasNodes: !!metaobjectResponse.data.metaobject.products_list?.references?.nodes,
+      nodeCount: metaobjectResponse.data.metaobject.products_list?.references?.nodes?.length || 0
     });
     
-    if (!metaobjectResponse.data.metaobject.slides.references?.nodes) {
-      console.warn('No product references found in metaobject slides field');
+    const productReferences = metaobjectResponse.data.metaobject.products_list?.references?.nodes;
+    if (!productReferences || productReferences.length === 0) {
+      console.warn('No product references found in metaobject');
       return [];
     }
     
-    const productHandles = metaobjectResponse.data.metaobject.slides.references.nodes.map(node => node.handle);
+    const productHandles = productReferences.map((product) => product.handle);
     
     if (productHandles.length === 0) {
       console.warn('No product handles found in metaobject');
       return [];
     }
     
-    console.log(`Found ${productHandles.length} product handles in metaobject`);
+    console.log(`Found ${productHandles.length} product handles in metaobject:`, productHandles);
     
     const productsQuery = `
-      query GetProducts($handles: [String!]!) {
-        nodes(ids: $handles) {
+      query GetProductsByIds($ids: [ID!]!) {
+        nodes(ids: $ids) {
           ... on Product {
             id
             handle
@@ -216,7 +217,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
       }>;
     }>({
       query: productsQuery,
-      variables: { handles: productGlobalIds }
+      variables: { ids: productGlobalIds }
     });
     
     const products = productsResponse.data.nodes.map((product) => {
@@ -226,7 +227,7 @@ export const getWorkspaceLPSlidesData = async (metaobjectHandle: string = LP_MET
         title: product.title,
         images: product.images.edges.map((imgEdge: { node: { url: string; altText: string | null } }) => ({
           url: imgEdge.node.url,
-          altText: imgEdge.node.altText || undefined
+          altText: imgEdge.node.altText || null
         })),
         priceRange: {
           minVariantPrice: {
