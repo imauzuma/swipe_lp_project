@@ -59,8 +59,8 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product, index, totalProduc
       </div>
       
       {/* Product Title */}
-      <div className="px-4 py-2 bg-white">
-        <h2 className="text-base font-medium text-black truncate">{title}</h2>
+      <div className="px-4 py-1 bg-white">
+        <h2 className="text-xs font-normal text-black truncate">{title}</h2>
       </div>
       
       {/* Swipe guide overlay */}
@@ -93,7 +93,7 @@ const ProductSlide: React.FC<ProductSlideProps> = ({ product, index, totalProduc
           href={onlineStoreUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute bottom-6 right-4 z-10 bg-white text-black px-4 py-2 rounded-full text-sm font-medium shadow-lg"
+          className="fixed bottom-4 right-4 z-50 bg-white text-black px-4 py-1.5 rounded-full text-xs font-medium shadow-lg border border-gray-200"
         >
           商品詳細を見る
         </a>
